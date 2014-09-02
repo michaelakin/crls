@@ -4,10 +4,12 @@ using CrystalReportLocationSetter2;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Windows.Data;
 
 namespace CrystalReportsLocationSetter2.ViewModel
 {
@@ -16,18 +18,23 @@ namespace CrystalReportsLocationSetter2.ViewModel
     /// </summary>
     public class MainViewModel : ViewModelBase
     {
+        private readonly object _reportsLock = new object();
+
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
         /// </summary>
         public MainViewModel()
         {
             AddReportsCommand = new RelayCommand(ExecuteAddReportsCommand);
-            RemoveCommand = new RelayCommand(ExecuteRemoveCommand);
+            RemoveCommand = new RelayCommand<IList<CrlsReportDocument>>(ExecuteRemoveCommand);
             RemoveAllCommand = new RelayCommand(ExecuteRemoveAllCommand);
             SetLocationCommand = new RelayCommand(ExecuteSetLocationCommand);
             OpenReportCommand = new RelayCommand(ExecuteOpenReportCommand);
             SaveCommand = new RelayCommand(ExecuteSaveCommand);
+            SelectItemsCommand = new RelayCommand<CrlsReportDocument>(ExecuteSelectItemsCommand);
+
             Reports = new ObservableCollection<CrlsReportDocument>();
+            BindingOperations.EnableCollectionSynchronization(Reports, _reportsLock);
         }
 
         public ObservableCollection<CrlsReportDocument> Reports { get; private set; }
@@ -45,7 +52,7 @@ namespace CrystalReportsLocationSetter2.ViewModel
 
         public RelayCommand AddReportsCommand { get; set; }
 
-        public RelayCommand RemoveCommand { get; set; }
+        public RelayCommand<IList<CrlsReportDocument>> RemoveCommand { get; set; }
 
         public RelayCommand RemoveAllCommand { get; set; }
 
@@ -55,6 +62,12 @@ namespace CrystalReportsLocationSetter2.ViewModel
 
         public RelayCommand SaveCommand { get; set; }
 
+        public RelayCommand<CrlsReportDocument> SelectItemsCommand { get; set; }
+
+        public void ExecuteSelectItemsCommand(CrlsReportDocument report)
+        {
+            SelectedReport = report;
+        }
 
         public async void ExecuteAddReportsCommand()
         {
@@ -69,14 +82,22 @@ namespace CrystalReportsLocationSetter2.ViewModel
             }
         }
 
-        public void ExecuteRemoveCommand()
+        public void ExecuteRemoveCommand(IList<CrlsReportDocument> reports)
         {
-
+            foreach (var report in reports)
+            {
+                Reports.Remove(report);
+                report.Dispose();
+            }
         }
 
         public void ExecuteRemoveAllCommand()
         {
-
+            foreach (var report in Reports)
+            {
+                Reports.Remove(report);
+                report.Dispose();
+            }
         }
 
         public void ExecuteSetLocationCommand()
@@ -177,11 +198,7 @@ namespace CrystalReportsLocationSetter2.ViewModel
             field = value;
             RaisePropertyChanged(fieldSetter);
         }
-
-
-
-
-
+        
 
         /// <summary>
         /// Gets or sets the <see cref="ReportConnectionInfo"/> used by the service.

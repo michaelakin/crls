@@ -85,7 +85,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="ButtonProperties.cs" />
     <Compile Include="CrlsReportDocument.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -148,24 +147,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\add.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\remove.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\verify.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\set_location.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\save_reports.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\open.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="Crystalv13\CrystalDecisions.CrystalReports.Engine.dll" />
     <Content Include="Crystalv13\CrystalDecisions.Enterprise.Viewing.ReportSource.dll" />
     <Content Include="Crystalv13\CrystalDecisions.KeyCode.dll" />
@@ -178,7 +159,6 @@
     <Content Include="Crystalv13\CrystalDecisions.ReportAppServer.ReportDefModel.dll" />
     <Content Include="Crystalv13\CrystalDecisions.ReportSource.dll" />
     <Content Include="Crystalv13\CrystalDecisions.Shared.dll" />
-    <Resource Include="Images\report.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

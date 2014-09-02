@@ -3,8 +3,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:CrystalReportsLocationSetter2">
 
-    <SolidColorBrush x:Key="DefaultForegroundBrush" Color="White" />
-    <SolidColorBrush x:Key="AppBackground" Color="#1C1C1C" />
+    <SolidColorBrush x:Key="DefaultForegroundBrush" Color="Black" />
+    <!--<SolidColorBrush x:Key="AppBackground" Color="#1C1C1C" />-->
     
     <Style x:Key="LabelStyle" TargetType="Label">
         <Setter Property="Foreground" Value="{StaticResource DefaultForegroundBrush}" />
@@ -14,18 +14,29 @@
         <Setter Property="Height" Value="48"></Setter>
         <Setter Property="Width" Value="48"></Setter>
         <Setter Property="Margin" Value="0"></Setter>
-        <Setter Property="Background" Value="#2A2A2A"></Setter>
+        <!--<Setter Property="Background" Value="#2A2A2A"></Setter>-->
         <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
         <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
     </Style>
 
     <Style x:Key="FormTextBox" TargetType="TextBox">
         <Setter Property="Height" Value="30" />
-        <Setter Property="Background" Value="#1C1C1C" />
+        <!--<Setter Property="Background" Value="#1C1C1C" />-->
         <Setter Property="Margin" Value="3.5" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Foreground" Value="{StaticResource DefaultForegroundBrush}" />
+    </Style>
+
+    <Style x:Key="ToolbarButtonText" TargetType="TextBlock">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style x:Key="ListBoxText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="SlateGray" />
+        <Setter Property="FontStyle" Value="Italic" />
+        <Setter Property="FontWeight" Value="Bold" />
     </Style>
 
     <DataTemplate x:Key="listBoxTemplate">
@@ -38,32 +49,35 @@
                 <ColumnDefinition></ColumnDefinition>
                 <ColumnDefinition></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <Image Source="Images/report.png" Grid.Column="0"/>
+
+            <Path Data="M30.383,9.5469999L30.383,9.6359997 30.198,9.6359997z M20.563,0L30.198,9.6359997 22.417057,9.6359997C21.396342,9.6333103,20.565564,8.8039265,20.563,7.7817736z M2.9636101,0L18.34132,0 18.34132,7.7813263C18.34132,10.033843,20.164132,11.855433,22.416848,11.855433L30.382998,11.855433 30.382998,32.420517C30.382998,34.057205,29.054892,35.383999,27.41948,35.383999L2.9636101,35.383999C1.3281391,35.383999,3.5697749E-07,34.057205,0,32.420517L0,2.9649534C3.5697749E-07,1.3269625,1.3281391,0,2.9636101,0z" Stretch="Uniform" Fill="#FF68217A" Width="26" Height="26" Margin="0,0,0,0" RenderTransformOrigin="0.5,0.5">
+                <Path.RenderTransform>
+                    <TransformGroup>
+                        <TransformGroup.Children>
+                            <RotateTransform Angle="0" />
+                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                        </TransformGroup.Children>
+                    </TransformGroup>
+                </Path.RenderTransform>
+            </Path>
             <StackPanel Margin="3" Grid.Column="1">
                 <DockPanel>
-                    <TextBlock FontWeight="Bold" Text="Name:" DockPanel.Dock="Left" Margin="5,0,10,0"/>
+                    <TextBlock Style="{StaticResource ListBoxText}" Text="Name:" DockPanel.Dock="Left" Margin="5,0,10,0"/>
                     <TextBlock Text="{Binding FileName}" Foreground="SlateBlue" FontWeight="Bold" />
                 </DockPanel>
                 <DockPanel >
-                    <TextBlock FontWeight="Bold" Text="Server:" DockPanel.Dock="Left" Margin="5,0,5,0"/>
+                    <TextBlock Style="{StaticResource ListBoxText}" Text="Server:" DockPanel.Dock="Left" Margin="5,0,5,0"/>
                     <TextBlock Text="{Binding Path=DataSourceConnections[0].ServerName, Mode=OneWay}" Foreground ="SlateGray" />
-                    <TextBlock FontWeight="Bold" Text="Database:" DockPanel.Dock="Left" Margin="5,0,5,0"/>
+                    <TextBlock Style="{StaticResource ListBoxText}" Text="Database:" DockPanel.Dock="Left" Margin="5,0,5,0"/>
                     <TextBlock Text="{Binding Path=DataSourceConnections[0].DatabaseName, Mode=OneWay}" Foreground ="SlateGray" />
-                    <TextBlock FontWeight="Bold" Text="Username:" DockPanel.Dock="Left" Margin="5,0,5,0"/>
+                    <TextBlock Style="{StaticResource ListBoxText}" Text="Username:" DockPanel.Dock="Left" Margin="5,0,5,0"/>
                     <TextBlock Text="{Binding Path=DataSourceConnections[0].UserID, Mode=OneWay}" Margin="5,0,10,0" Foreground ="SlateGray"/>
                 </DockPanel>
             </StackPanel>
         </Grid>
 
     </DataTemplate>
+
     
-    <!-- Images -->
-    <BitmapImage x:Key="AddImage" UriSource="Images/add.png" />
-    <BitmapImage x:Key="RemoveImage" UriSource="Images/remove.png" />
-    <BitmapImage x:Key="OpenImage" UriSource="Images/open.png" />
-    <BitmapImage x:Key="ReportImage" UriSource="Images/report.png" />
-    <BitmapImage x:Key="SaveImage" UriSource="Images/save_reports.png" />
-    <BitmapImage x:Key="SetLocationImage" UriSource="Images/set_location.png" />
-    <BitmapImage x:Key="VerifyImage" UriSource="Images/verify.png" />
     
 </ResourceDictionary>

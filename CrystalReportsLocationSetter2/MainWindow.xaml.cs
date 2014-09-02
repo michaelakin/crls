@@ -26,7 +26,6 @@ namespace CrystalReportsLocationSetter2
 
         public MainWindow()
         {
-            StyleManager.ApplicationTheme = new Expression_DarkTheme();
             InitializeComponent();
             _viewModel = (MainViewModel)DataContext;
         }
