@@ -3,13 +3,16 @@ using CrystalDecisions.Shared;
 using CrystalReportLocationSetter2;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Data;
+using System.Windows.Forms;
 
 namespace CrystalReportsLocationSetter2.ViewModel
 {
@@ -18,6 +21,9 @@ namespace CrystalReportsLocationSetter2.ViewModel
     /// </summary>
     public class MainViewModel : ViewModelBase
     {
+        private CrlsReportDocument _selectedReport;
+        private bool _shouldVerify;
+        private string _status;
         private readonly object _reportsLock = new object();
 
         /// <summary>
@@ -26,33 +32,34 @@ namespace CrystalReportsLocationSetter2.ViewModel
         public MainViewModel()
         {
             AddReportsCommand = new RelayCommand(ExecuteAddReportsCommand);
-            RemoveCommand = new RelayCommand<IList<CrlsReportDocument>>(ExecuteRemoveCommand);
+            RemoveCommand = new RelayCommand(ExecuteRemoveCommand);
             RemoveAllCommand = new RelayCommand(ExecuteRemoveAllCommand);
             SetLocationCommand = new RelayCommand(ExecuteSetLocationCommand);
             OpenReportCommand = new RelayCommand(ExecuteOpenReportCommand);
             SaveCommand = new RelayCommand(ExecuteSaveCommand);
             SelectItemsCommand = new RelayCommand<CrlsReportDocument>(ExecuteSelectItemsCommand);
 
-            Reports = new ObservableCollection<CrlsReportDocument>();
+            Reports = new ReportCollection();
             BindingOperations.EnableCollectionSynchronization(Reports, _reportsLock);
+            ReportConnectionInfo = new ReportConnectionInfo(
+                Settings.Default.Server,
+                Settings.Default.Database,
+                Settings.Default.Username,
+                Settings.Default.Password,
+                false);
         }
 
-        public ObservableCollection<CrlsReportDocument> Reports { get; private set; }
+        public ReportCollection Reports { get; private set; }
 
-        private CrlsReportDocument _selectedReport;
         public CrlsReportDocument SelectedReport
         {
             get { return _selectedReport; }
-            set
-            {
-                _selectedReport = value;
-                RaisePropertyChanged(() => SelectedReport);
-            }
+            set { Set<CrlsReportDocument>(() => SelectedReport, ref _selectedReport, value); }
         }
 
         public RelayCommand AddReportsCommand { get; set; }
 
-        public RelayCommand<IList<CrlsReportDocument>> RemoveCommand { get; set; }
+        public RelayCommand RemoveCommand { get; set; }
 
         public RelayCommand RemoveAllCommand { get; set; }
 
@@ -82,13 +89,10 @@ namespace CrystalReportsLocationSetter2.ViewModel
             }
         }
 
-        public void ExecuteRemoveCommand(IList<CrlsReportDocument> reports)
+        public void ExecuteRemoveCommand()
         {
-            foreach (var report in reports)
-            {
-                Reports.Remove(report);
-                report.Dispose();
-            }
+            Reports.Remove(SelectedReport);
+            SelectedReport = null;
         }
 
         public void ExecuteRemoveAllCommand()
@@ -100,134 +104,67 @@ namespace CrystalReportsLocationSetter2.ViewModel
             }
         }
 
-        public void ExecuteSetLocationCommand()
+        public async void ExecuteSetLocationCommand()
         {
-
+            foreach (var report in Reports)
+            {
+                await SetLocationForReportAsync(report, ShouldVerify);
+            }
         }
 
         public void ExecuteOpenReportCommand()
         {
-
-        }
-
-        public void ExecuteSaveCommand()
-        {
-
-        }
-
-
-
-        private bool _shouldVerify;
-        public bool ShouldVerify
-        {
-            get { return _shouldVerify; }
-            set
-            {
-                SetValue<bool>(ref _shouldVerify, value);
-            }
-        }
-
-        /// <summary>
-        /// The server/DSN name.
-        /// </summary>
-        public string Server
-        {
-            get { return Settings.Default.Server; }
-            set
-            {
-                Settings.Default.Server = value;
-                RaisePropertyChanged("Server");
-            }
-        }
-
-        /// <summary>
-        /// The database to which the reports will connect.
-        /// </summary>
-        public string Database
-        {
-            get { return Settings.Default.Database; }
-            set
-            {
-                Settings.Default.Database = value;
-                RaisePropertyChanged("Database");
-            }
-        }
-
-        /// <summary>
-        /// The username for the new connection (required if not using Integrated Security).
-        /// </summary>
-        public string Username
-        {
-            get { return Settings.Default.Username; }
-            set
-            {
-                Settings.Default.Username = value;
-                RaisePropertyChanged("Username");
-            }
-        }
-
-        /// <summary>
-        /// The password for the new connection (required if not using Integrated Security).
-        /// </summary>
-        public string Password
-        {
-            get { return Settings.Default.Password; }
-            set
-            {
-                Settings.Default.Password = value;
-                RaisePropertyChanged("Password");
-            }
-        }
-
-        /// <summary>
-        /// Value indicating whether or not Integrated Security will be used.
-        /// </summary>
-        public bool IntegratedSecurity
-        {
-            get { return Settings.Default.IntegratedSecurity; }
-            set
-            {
-                Settings.Default.IntegratedSecurity = value;
-                RaisePropertyChanged("IntegratedSecurity");
-            }
-        }
-
-
-        private void SetValue<T>(ref T field, T value, [CallerMemberName] string fieldSetter = "")
-        {
-            field = value;
-            RaisePropertyChanged(fieldSetter);
+            
         }
         
-
-        /// <summary>
-        /// Gets or sets the <see cref="ReportConnectionInfo"/> used by the service.
-        /// </summary>
-        public ReportConnectionInfo ReportConnectionInfo { get; set; }
-
-
-        /// <summary>
-        /// Asynchronously performs the "Set Datasource Location" process on the collection of reports.
-        /// </summary>
-        /// <param name="reports">The collection of reports to process.</param>
-        /// <param name="isVerify">If true, "Verify Database" will also be performed on the reports.</param>
-        public async Task SetLocationForReportsAsync(ReportCollection reports, bool isVerify)
+        public void ExecuteSaveCommand()
         {
-            for (int i = 0; i < reports.Count; i++)
+            var dialog = new System.Windows.Forms.FolderBrowserDialog();
+            dialog.ShowNewFolderButton = true;
+            
+            if (dialog.ShowDialog() != DialogResult.OK) return;
+            if (String.IsNullOrWhiteSpace(dialog.SelectedPath)) return;            
+            
+            string path = dialog.SelectedPath;
+
+            for (int i = 0; i < Reports.Count; i++)
             {
-                var report = reports[i];
+                Status = String.Format("Saving report {0}/{1}", i, Reports.Count);
+                var report = Reports[i];
 
                 try
                 {
-                    await SetLocationForReportAsync(report, isVerify);
+                    string newName = Path.Combine(path, Path.GetFileName(report.FileName));
+                    Status = String.Format("Saving {0}...", newName);
+                    report.SaveAs(newName, false);
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine(ex);
-                    //_logger.LogException(LogLevel.Error, "Set location failed.", ex);
+                    Status = ex.ToString();
                 }
             }
+            Status = "Finished saving reports.";
         }
+
+        public bool ShouldVerify
+        {
+            get { return _shouldVerify; }
+            set { Set<bool>(() => ShouldVerify, ref _shouldVerify, value); }
+        }
+
+        /// <summary>
+        /// Gets or sets the status text displayed.
+        /// </summary>
+        public string Status
+        {
+            get { return _status; }
+            set { Set<string>(() => Status, ref _status, value); }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ReportConnectionInfo"/> for the form.
+        /// </summary>
+        public ReportConnectionInfo ReportConnectionInfo { get; set; }
 
         /// <summary>
         /// Performs the "Set Datasource Location" process on a single report.
@@ -236,70 +173,17 @@ namespace CrystalReportsLocationSetter2.ViewModel
         /// <param name="isVerify">If true, "Verify Database" will also be performed on the report.</param>
         public async Task SetLocationForReportAsync(CrlsReportDocument doc, bool isVerify)
         {
-            await UdpateConnectionInfoAsync(doc);
+            Status = String.Format("Setting location for {0}...", Path.GetFileName(doc.FileName));
+            await Task.Run(() => doc.UpdateConnectionInfo(ReportConnectionInfo));
+
+            Reports.NotifyChanged();
 
             if (isVerify)
             {
                 await Task.Run(() => doc.VerifyDatabase());
             }
-        }
 
-        #region Private Methods
-
-        private async Task UdpateConnectionInfoAsync(CrlsReportDocument reportDocument)
-        {
-            ConnectionInfo connectionInfo = new ConnectionInfo();
-            connectionInfo.ServerName = ReportConnectionInfo.Server;
-            connectionInfo.DatabaseName = ReportConnectionInfo.Database;
-            connectionInfo.UserID = ReportConnectionInfo.Username;
-            connectionInfo.Password = ReportConnectionInfo.Password;
-
-            await SetDataSourceLocationAsync(connectionInfo, reportDocument);
-            await SetDataSourceLocationForSubreportsAsync(connectionInfo, reportDocument);
-        }
-
-        private Task SetDataSourceLocationAsync(ConnectionInfo connectionInfo, ReportDocument crystalReportDocument)
-        {
-            Task task = Task.Run(() =>
-            {
-                foreach (IConnectionInfo connectInfo in crystalReportDocument.DataSourceConnections)
-                {
-                    connectInfo.SetConnection(connectionInfo.ServerName, connectionInfo.DatabaseName,
-                        connectionInfo.UserID, connectionInfo.Password);
-                }
-
-                foreach (Table table in crystalReportDocument.Database.Tables)
-                {
-                    TableLogOnInfo tableLogonInfo = table.LogOnInfo;
-                    tableLogonInfo.ConnectionInfo = connectionInfo;
-                    table.ApplyLogOnInfo(tableLogonInfo);
-                    table.Location = table.LogOnInfo.TableName;
-                }
-            });
-
-            return task;
-        }
-
-        private string _status;
-        public string Status 
-        {
-            get { return _status; }
-            set { SetValue<string>(ref _status, value); }
-        }
-
-        private Task SetDataSourceLocationForSubreportsAsync(ConnectionInfo connectionInfo, CrlsReportDocument reportDocument)
-        {
-            Task task = Task.Run(async () =>
-            {
-                if (reportDocument.Subreports == null) return;
-
-                foreach (ReportDocument subreport in reportDocument.Subreports)
-                {
-                    await SetDataSourceLocationAsync(connectionInfo, subreport);
-                }
-            });
-
-            return task;
+            Status = "Finished setting location for reports.";
         }
 
         private Task AddReportsAsync(string[] files)
@@ -329,11 +213,9 @@ namespace CrystalReportsLocationSetter2.ViewModel
             });
 
             t.Start();
-            return t;     
+            return t;
         }
 
-        #endregion
-
-
+        
     }
 }
